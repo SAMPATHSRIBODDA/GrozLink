@@ -48,8 +48,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "125a5c3a-a4e9-464f-8088-37ebdfcefda9"
+        "projectId": "0d75af1e-1f12-479c-889e-e81ddfb77ad4"
+      },
+      "router": {
+        "origin": "https://replit.com/"
       }
-    }
+    },
+    "owner": "groziostore"
   }
 }
