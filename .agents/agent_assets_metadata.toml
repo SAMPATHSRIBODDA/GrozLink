@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "oyQavVgJJrSpbusCiLLvd"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "grozio app icon"
