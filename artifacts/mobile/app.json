@@ -39,18 +39,18 @@
         }
       ],
       "expo-font",
-      "expo-document-picker"
-    ],
-    [
-      "expo-build-properties",
-      {
-        "android": {
-          "enableProguardInReleaseBuilds": true,
-          "enableHermes": true,
-          "minifyEnabled": true,
-          "shrinkResources": true
+      "expo-document-picker",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableHermes": true,
+            "minifyEnabled": true,
+            "shrinkResources": true
+          }
         }
-      }
+      ]
     ],
 
     "experiments": {
