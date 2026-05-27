@@ -1,5 +1,4 @@
 import * as FileSystem from "expo-file-system/legacy";
-import * as XLSX from "xlsx";
 import { TemplateRules } from "@/utils/storage";
 import { MatchResult } from "@/utils/matching";
 
@@ -25,13 +24,22 @@ export async function parseExcelFile(
   uri: string,
   rules: TemplateRules
 ): Promise<{ rows: ExcelRow[]; validation: ValidationResult }> {
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
+  // Lightweight fallback: only CSV files are supported in the minimal mobile build.
+  // For XLSX files, processing must be done server-side.
+  const isCsv = uri.toLowerCase().endsWith(".csv") || uri.toLowerCase().includes("text/csv");
+  if (!isCsv) {
+    throw new Error("Excel (XLS/XLSX) parsing is disabled in the minimal mobile build. Please upload an Excel file to the server for processing.");
+  }
+
+  const csv = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.UTF8,
   });
 
-  const workbook = XLSX.read(base64, { type: "base64" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  const rawData = lines.map((line) => {
+    // Very small, permissive CSV split. Does not fully support quoted commas.
+    return line.split(",");
+  }) as unknown[][];
 
   if (!rawData || rawData.length === 0) {
     throw new Error("Excel file is empty");
@@ -128,52 +136,35 @@ export async function generateOutputExcel(
   matchResults: MatchResult[],
   rules: TemplateRules
 ): Promise<string> {
-  const base64 = await FileSystem.readAsStringAsync(originalUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  // Only CSV output supported in this minimal mobile build.
+  const isCsv = originalUri.toLowerCase().endsWith(".csv") || originalUri.toLowerCase().includes("text/csv");
+  if (!isCsv) {
+    throw new Error("Generating XLSX is disabled in the minimal mobile build. Use server-side processing to generate Excel files.");
+  }
+
+  const csv = await FileSystem.readAsStringAsync(originalUri, {
+    encoding: FileSystem.EncodingType.UTF8,
   });
 
-  const workbook = XLSX.read(base64, { type: "base64" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  const rows = lines.map((l) => l.split(","));
 
-  const headers = (rawData[0] as unknown[]).map((h) => String(h ?? "").trim());
+  const headers = (rows[0] ?? []).map((h) => String(h ?? "").trim());
   const normalize = (s: string) => (rules.caseSensitive ? s : s.toLowerCase());
-  const findCol = (name: string) =>
-    headers.findIndex((h) => normalize(h) === normalize(name));
+  const findCol = (name: string) => headers.findIndex((h) => normalize(h) === normalize(name));
 
   const imageUrlIdx = findCol(rules.imageUrlColumn);
   if (imageUrlIdx === -1) throw new Error("Image URL column not found");
-  const extraColumns = (rules.extraColumns ?? []).map((column) => column.trim()).filter(Boolean);
-  const extraColumnIndexes = extraColumns
-    .map((column) => ({ column, index: findCol(column) }))
-    .filter((entry) => entry.index === -1);
 
   for (const result of matchResults) {
-    if (result.status === "matched" && result.cloudinaryUrl && result.rowIndex < rawData.length) {
-      const row = rawData[result.rowIndex] as unknown[];
+    if (result.status === "matched" && result.cloudinaryUrl && result.rowIndex < rows.length) {
+      const row = rows[result.rowIndex];
       while (row.length <= imageUrlIdx) row.push("");
       row[imageUrlIdx] = result.cloudinaryUrl;
     }
   }
 
-  if (extraColumnIndexes.length > 0) {
-    extraColumnIndexes.forEach(({ column }) => {
-      rawData[0].push(column);
-    });
-
-    for (let rowIndex = 1; rowIndex < rawData.length; rowIndex += 1) {
-      const row = rawData[rowIndex] as unknown[];
-      while (row.length < rawData[0].length) {
-        row.push("");
-      }
-    }
-  }
-
-  const newSheet = XLSX.utils.aoa_to_sheet(rawData);
-  workbook.Sheets[sheetName] = newSheet;
-
-  const outputCsv = XLSX.utils.sheet_to_csv(newSheet);
+  const outputCsv = rows.map((r) => r.join(",")).join("\n");
   const outputPath = `${FileSystem.documentDirectory}grozio_output_${Date.now()}.csv`;
   await FileSystem.writeAsStringAsync(outputPath, outputCsv, {
     encoding: FileSystem.EncodingType.UTF8,
