@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "grozio",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#ff6b00"
@@ -41,6 +41,18 @@
       "expo-font",
       "expo-document-picker"
     ],
+    [
+      "expo-build-properties",
+      {
+        "android": {
+          "enableProguardInReleaseBuilds": true,
+          "enableHermes": true,
+          "minifyEnabled": true,
+          "shrinkResources": true
+        }
+      }
+    ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
