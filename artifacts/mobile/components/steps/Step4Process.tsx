@@ -48,6 +48,7 @@ export function Step4Process() {
     const total = matched.length;
     let uploaded = 0;
     let failed = 0;
+    const updatedResults = [...state.matchResults];
 
     const addLog = (msg: string) => dispatch({ type: "ADD_LOG", payload: msg });
     addLog(`Starting upload of ${total} images to Cloudinary…`);
@@ -69,6 +70,11 @@ export function Step4Process() {
           state.cloudinarySettings!
         );
         uploaded++;
+        updatedResults[i] = {
+          ...updatedResults[i],
+          uploadStatus: "success",
+          cloudinaryUrl: url,
+        };
         dispatch({
           type: "UPDATE_MATCH_RESULT",
           payload: { index: i, result: { uploadStatus: "success", cloudinaryUrl: url } },
@@ -78,6 +84,11 @@ export function Step4Process() {
       } catch (e) {
         failed++;
         const msg = e instanceof Error ? e.message : "Unknown error";
+        updatedResults[i] = {
+          ...updatedResults[i],
+          uploadStatus: "failed",
+          errorMessage: msg,
+        };
         dispatch({
           type: "UPDATE_MATCH_RESULT",
           payload: { index: i, result: { uploadStatus: "failed", errorMessage: msg } },
@@ -94,7 +105,7 @@ export function Step4Process() {
       try {
         const outputPath = await generateOutputExcel(
           state.excelFile.uri,
-          state.matchResults,
+          updatedResults,
           state.templateRules!
         );
         dispatch({ type: "SET_OUTPUT_EXCEL", payload: outputPath });

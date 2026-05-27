@@ -65,6 +65,7 @@ export async function parseExcelFile(
   const productNameIdx = findCol(rules.productNameColumn);
   const imageNameIdx = findCol(rules.imageNameColumn);
   const imageUrlIdx = findCol(rules.imageUrlColumn);
+  const extraColumns = (rules.extraColumns ?? []).map((column) => column.trim()).filter(Boolean);
 
   const required = [
     { name: rules.productNameColumn, idx: productNameIdx },
@@ -73,9 +74,10 @@ export async function parseExcelFile(
   ];
 
   const optionalCols = [rules.priceColumn, rules.categoryColumn, rules.brandColumn].filter(Boolean);
+  const allOptionalCols = [...optionalCols, ...extraColumns].filter(Boolean);
   const missingRequired = required.filter((r) => r.idx === -1).map((r) => r.name);
   const foundColumns = required.filter((r) => r.idx !== -1).map((r) => r.name);
-  const missingOptional = optionalCols.filter((c) => findCol(c) === -1);
+  const missingOptional = allOptionalCols.filter((c) => findCol(c) === -1);
 
   const isValid = missingRequired.length === 0 && duplicateHeaders.length === 0;
 
@@ -103,6 +105,10 @@ export async function parseExcelFile(
     const rawRow: Record<string, unknown> = {};
     headers.forEach((h, idx) => {
       rawRow[h] = row[idx] ?? "";
+    });
+
+    extraColumns.forEach((column) => {
+      if (!(column in rawRow)) rawRow[column] = "";
     });
 
     rows.push({
@@ -138,6 +144,10 @@ export async function generateOutputExcel(
 
   const imageUrlIdx = findCol(rules.imageUrlColumn);
   if (imageUrlIdx === -1) throw new Error("Image URL column not found");
+  const extraColumns = (rules.extraColumns ?? []).map((column) => column.trim()).filter(Boolean);
+  const extraColumnIndexes = extraColumns
+    .map((column) => ({ column, index: findCol(column) }))
+    .filter((entry) => entry.index === -1);
 
   for (const result of matchResults) {
     if (result.status === "matched" && result.cloudinaryUrl && result.rowIndex < rawData.length) {
@@ -147,13 +157,26 @@ export async function generateOutputExcel(
     }
   }
 
+  if (extraColumnIndexes.length > 0) {
+    extraColumnIndexes.forEach(({ column }) => {
+      rawData[0].push(column);
+    });
+
+    for (let rowIndex = 1; rowIndex < rawData.length; rowIndex += 1) {
+      const row = rawData[rowIndex] as unknown[];
+      while (row.length < rawData[0].length) {
+        row.push("");
+      }
+    }
+  }
+
   const newSheet = XLSX.utils.aoa_to_sheet(rawData);
   workbook.Sheets[sheetName] = newSheet;
 
-  const outputBase64 = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
-  const outputPath = `${FileSystem.documentDirectory}grozio_output_${Date.now()}.xlsx`;
-  await FileSystem.writeAsStringAsync(outputPath, outputBase64, {
-    encoding: FileSystem.EncodingType.Base64,
+  const outputCsv = XLSX.utils.sheet_to_csv(newSheet);
+  const outputPath = `${FileSystem.documentDirectory}grozio_output_${Date.now()}.csv`;
+  await FileSystem.writeAsStringAsync(outputPath, outputCsv, {
+    encoding: FileSystem.EncodingType.UTF8,
   });
 
   return outputPath;

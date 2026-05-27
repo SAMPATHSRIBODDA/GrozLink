@@ -19,6 +19,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "arrow.up.circle", selected: "arrow.up.circle.fill" }} />
         <Label>Upload</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="media-upload">
+        <Icon sf={{ default: "photo", selected: "photo.fill" }} />
+        <Label>Media Upload</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gear", selected: "gear" }} />
         <Label>Settings</Label>
@@ -81,6 +85,18 @@ function ClassicTabLayout() {
               <SymbolView name="arrow.up.circle" tintColor={color} size={24} />
             ) : (
               <Feather name="upload-cloud" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="media-upload"
+        options={{
+          title: "Media Upload",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="photo" tintColor={color} size={24} />
+            ) : (
+              <Feather name="image" size={22} color={color} />
             ),
         }}
       />

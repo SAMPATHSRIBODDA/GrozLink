@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
@@ -21,6 +22,32 @@ export function Step1Excel() {
   const colors = useColors();
   const { state, dispatch, nextStep, prevStep } = useUpload();
   const [parsing, setParsing] = useState(false);
+  const [extraColumns, setExtraColumns] = useState<string[]>(state.templateRules?.extraColumns ?? []);
+
+  const normalizedExtraColumns = useMemo(
+    () => extraColumns.map((column) => column.trim()).filter(Boolean),
+    [extraColumns]
+  );
+
+  useEffect(() => {
+    if (!state.templateRules) return;
+    const current = state.templateRules.extraColumns ?? [];
+    const next = normalizedExtraColumns;
+    if (current.length === next.length && current.every((column, index) => column === next[index])) {
+      return;
+    }
+    dispatch({
+      type: "SET_TEMPLATE_RULES",
+      payload: {
+        ...state.templateRules,
+        extraColumns: next,
+      },
+    });
+  }, [dispatch, normalizedExtraColumns, state.templateRules]);
+
+  useEffect(() => {
+    setExtraColumns(state.templateRules?.extraColumns ?? []);
+  }, [state.templateRules]);
 
   const pickExcel = async () => {
     try {
@@ -51,7 +78,10 @@ export function Step1Excel() {
     if (!state.templateRules) return;
     setParsing(true);
     try {
-      const { rows, validation } = await parseExcelFile(uri, state.templateRules);
+      const { rows, validation } = await parseExcelFile(uri, {
+        ...state.templateRules,
+        extraColumns: normalizedExtraColumns,
+      });
       dispatch({ type: "SET_PARSED_DATA", payload: { rows, validation } });
       if (!validation.isValid) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -67,6 +97,18 @@ export function Step1Excel() {
   };
 
   const canProceed = state.excelFile && state.validation?.isValid && state.parsedRows.length > 0;
+
+  const addColumn = () => {
+    setExtraColumns((columns) => [...columns, ""]);
+  };
+
+  const updateColumn = (index: number, value: string) => {
+    setExtraColumns((columns) => columns.map((column, columnIndex) => (columnIndex === index ? value : column)));
+  };
+
+  const removeColumn = (index: number) => {
+    setExtraColumns((columns) => columns.filter((_, columnIndex) => columnIndex !== index));
+  };
 
   return (
     <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -110,6 +152,51 @@ export function Step1Excel() {
           )}
         </View>
       )}
+
+      <View style={[styles.columnsCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+        <View style={styles.columnsHeader}>
+          <View>
+            <Text style={[styles.previewTitle, { color: colors.foreground, marginBottom: 0 }]}>Additional Columns</Text>
+            <Text style={[styles.columnsSub, { color: colors.mutedForeground }]}>Add new blank columns that will be kept in the final output file.</Text>
+          </View>
+          <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={addColumn} activeOpacity={0.85}>
+            <Feather name="plus" size={16} color="#fff" />
+            <Text style={styles.addBtnText}>Add Column</Text>
+          </TouchableOpacity>
+        </View>
+
+        {extraColumns.length === 0 ? (
+          <Text style={[styles.columnsEmpty, { color: colors.mutedForeground }]}>No extra columns added yet.</Text>
+        ) : (
+          <View style={styles.columnsList}>
+            {extraColumns.map((column, index) => (
+              <View key={`${index}-${column}`} style={styles.columnRow}>
+                <TextInput
+                  style={[
+                    styles.columnInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                    },
+                  ]}
+                  value={column}
+                  onChangeText={(value) => updateColumn(index, value)}
+                  placeholder="New column name"
+                  placeholderTextColor={colors.mutedForeground}
+                />
+                <TouchableOpacity
+                  style={[styles.removeBtn, { borderColor: colors.border }]}
+                  onPress={() => removeColumn(index)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="x" size={16} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
 
       {state.validation && !state.validation.isValid && (
         <TouchableOpacity
@@ -170,7 +257,49 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 0,
   },
+  columnsCard: {
+    marginTop: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  },
+  columnsHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   previewTitle: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
+  columnsSub: { fontSize: 12, marginTop: 3, lineHeight: 18 },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  addBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  columnsEmpty: { fontSize: 12 },
+  columnsList: { gap: 10 },
+  columnRow: { flexDirection: "row", gap: 10, alignItems: "center" },
+  columnInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  removeBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   previewRow: {
     flexDirection: "row",
     justifyContent: "space-between",

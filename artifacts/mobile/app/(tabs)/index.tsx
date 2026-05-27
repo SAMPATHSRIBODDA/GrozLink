@@ -79,6 +79,15 @@ export default function DashboardScreen() {
             <Feather name="upload-cloud" size={16} color={colors.primary} />
             <Text style={[styles.heroBtnText, { color: colors.primary }]}>Start New Upload</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.heroBtn, styles.secondaryHeroBtn, { borderColor: "rgba(255,255,255,0.18)" }]}
+            onPress={() => router.push("/(tabs)/media-upload")}
+            activeOpacity={0.85}
+          >
+            <Feather name="image" size={16} color="#fff" />
+            <Text style={styles.secondaryHeroBtnText}>Direct Media Upload</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Overview</Text>
@@ -223,6 +232,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   heroBtnText: { fontSize: 15, fontWeight: "700" },
+  secondaryHeroBtn: {
+    marginTop: -4,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+  },
+  secondaryHeroBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
   sectionTitle: { fontSize: 17, fontWeight: "700", marginTop: 4 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   sessionCount: { fontSize: 13 },

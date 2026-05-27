@@ -2,12 +2,12 @@ import React, { useEffect } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   Dimensions,
   Platform,
 } from "react-native";
 import Animated, {
+  cancelAnimation,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -33,6 +33,8 @@ export function SplashAnimation({ onFinish }: Props) {
   const titleY = useSharedValue(24);
   const subtitleOpacity = useSharedValue(0);
   const containerOpacity = useSharedValue(1);
+  const pulseScale = useSharedValue(0.9);
+  const ringOpacity = useSharedValue(0.2);
 
   const line1W = useSharedValue(0);
   const line2W = useSharedValue(0);
@@ -70,12 +72,37 @@ export function SplashAnimation({ onFinish }: Props) {
 
     subtitleOpacity.value = withDelay(1300, withTiming(1, { duration: 400 }));
 
+    pulseScale.value = withSequence(
+      withTiming(1.06, { duration: 700, easing: Easing.out(Easing.quad) }),
+      withTiming(0.98, { duration: 700, easing: Easing.inOut(Easing.quad) })
+    );
+    ringOpacity.value = withSequence(
+      withTiming(0.35, { duration: 700 }),
+      withTiming(0.12, { duration: 700 })
+    );
+
     containerOpacity.value = withDelay(
       2600,
       withTiming(0, { duration: 500, easing: Easing.in(Easing.quad) }, (done) => {
         if (done) runOnJS(onFinish)();
       })
     );
+
+    return () => {
+      cancelAnimation(line1W);
+      cancelAnimation(line2W);
+      cancelAnimation(line3W);
+      cancelAnimation(truckX);
+      cancelAnimation(truckScale);
+      cancelAnimation(logoOpacity);
+      cancelAnimation(logoScale);
+      cancelAnimation(titleOpacity);
+      cancelAnimation(titleY);
+      cancelAnimation(subtitleOpacity);
+      cancelAnimation(containerOpacity);
+      cancelAnimation(pulseScale);
+      cancelAnimation(ringOpacity);
+    };
   }, []);
 
   const truckStyle = useAnimatedStyle(() => ({
@@ -103,23 +130,21 @@ export function SplashAnimation({ onFinish }: Props) {
   const line1Style = useAnimatedStyle(() => ({ width: line1W.value }));
   const line2Style = useAnimatedStyle(() => ({ width: line2W.value }));
   const line3Style = useAnimatedStyle(() => ({ width: line3W.value }));
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulseScale.value }] }));
+  const ringStyle = useAnimatedStyle(() => ({ opacity: ringOpacity.value }));
 
   return (
     <Animated.View style={[styles.container, containerStyle]}>
+      <Animated.View style={[styles.ringOuter, ringStyle]} />
+      <Animated.View style={[styles.ringInner, pulseStyle]} />
       <View style={styles.speedLines}>
         <Animated.View style={[styles.speedLine, styles.speedLine1, line1Style]} />
         <Animated.View style={[styles.speedLine, styles.speedLine2, line2Style]} />
         <Animated.View style={[styles.speedLine, styles.speedLine3, line3Style]} />
       </View>
 
-      <Animated.View style={[styles.logoWrap, logoStyle]}>
-        <Animated.View style={truckStyle}>
-          <Image
-            source={require("../assets/images/grozio-logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </Animated.View>
+      <Animated.View style={[styles.logoWrap, logoStyle, truckStyle]}>
+        <Text style={styles.logoMark}>G</Text>
       </Animated.View>
 
       <Animated.Text style={[styles.title, titleStyle]}>
@@ -161,18 +186,44 @@ const styles = StyleSheet.create({
   speedLine2: { marginLeft: 20 },
   speedLine3: { marginLeft: 44 },
   logoWrap: {
-    marginBottom: 8,
+    marginBottom: 10,
+    width: 118,
+    height: 118,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
   },
-  logo: {
-    width: SW * 0.7,
-    height: SW * 0.7,
+  ringOuter: {
+    position: "absolute",
+    width: 186,
+    height: 186,
+    borderRadius: 93,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  ringInner: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.32)",
+  },
+  logoMark: {
+    color: "#ffffff",
+    fontSize: 52,
+    fontWeight: "900",
+    letterSpacing: -2,
   },
   title: {
     fontSize: 42,
     fontWeight: "900",
     color: "#ffffff",
     letterSpacing: 1,
-    marginTop: 4,
+    marginTop: 0,
     textShadowColor: "rgba(0,0,0,0.15)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,

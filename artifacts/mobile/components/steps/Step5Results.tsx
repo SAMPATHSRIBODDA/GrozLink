@@ -25,7 +25,7 @@ export function Step5Results() {
 
   const handleShare = async () => {
     if (!state.outputExcelPath) {
-      Alert.alert("No File", "Output Excel file was not generated.");
+      Alert.alert("No File", "Output CSV file was not generated.");
       return;
     }
     if (Platform.OS === "web") {
@@ -38,8 +38,8 @@ export function Step5Results() {
       return;
     }
     await Sharing.shareAsync(state.outputExcelPath, {
-      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      dialogTitle: "Share Updated Excel",
+      mimeType: "text/csv",
+      dialogTitle: "Share Updated CSV",
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -139,7 +139,7 @@ export function Step5Results() {
           activeOpacity={0.8}
         >
           <Feather name="download" size={20} color="#fff" />
-          <Text style={styles.downloadBtnText}>Download / Share Excel</Text>
+          <Text style={styles.downloadBtnText}>Download / Share CSV</Text>
         </TouchableOpacity>
       )}
 

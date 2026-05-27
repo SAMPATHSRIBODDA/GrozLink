@@ -14,6 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Platform } from "react-native";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { UploadProvider } from "@/context/UploadContext";
 import { SplashAnimation } from "@/components/SplashAnimation";
 
@@ -50,16 +51,18 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <UploadProvider>
-                <RootLayoutNav />
-                {showSplash && Platform.OS !== "web" && (
-                  <SplashAnimation onFinish={() => setShowSplash(false)} />
-                )}
-              </UploadProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
+          <ThemeProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <UploadProvider>
+                  <RootLayoutNav />
+                  {showSplash && Platform.OS !== "web" && (
+                    <SplashAnimation onFinish={() => setShowSplash(false)} />
+                  )}
+                </UploadProvider>
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </ThemeProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

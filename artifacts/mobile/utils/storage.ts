@@ -7,6 +7,7 @@ export interface TemplateRules {
   priceColumn: string;
   categoryColumn: string;
   brandColumn: string;
+  extraColumns: string[];
   caseSensitive: boolean;
   ignoreExtraSpaces: boolean;
   strictMode: boolean;
@@ -18,6 +19,8 @@ export interface CloudinarySettings {
   apiKey: string;
   folder: string;
 }
+
+export type ThemeMode = "system" | "light" | "dark";
 
 export interface SessionRecord {
   id: string;
@@ -33,6 +36,7 @@ const KEYS = {
   TEMPLATE_RULES: "grozio_template_rules",
   CLOUDINARY_SETTINGS: "grozio_cloudinary_settings",
   SESSION_HISTORY: "grozio_session_history",
+  THEME_MODE: "grozio_theme_mode",
 };
 
 export const defaultTemplateRules: TemplateRules = {
@@ -42,6 +46,7 @@ export const defaultTemplateRules: TemplateRules = {
   priceColumn: "Price",
   categoryColumn: "Category",
   brandColumn: "Brand",
+  extraColumns: [],
   caseSensitive: false,
   ignoreExtraSpaces: true,
   strictMode: true,
@@ -97,4 +102,18 @@ export async function addSessionRecord(session: SessionRecord): Promise<void> {
 
 export async function clearSessionHistory(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.SESSION_HISTORY);
+}
+
+export async function loadThemeMode(): Promise<ThemeMode> {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.THEME_MODE);
+    if (raw === "light" || raw === "dark" || raw === "system") return raw;
+    return "system";
+  } catch {
+    return "system";
+  }
+}
+
+export async function saveThemeMode(mode: ThemeMode): Promise<void> {
+  await AsyncStorage.setItem(KEYS.THEME_MODE, mode);
 }

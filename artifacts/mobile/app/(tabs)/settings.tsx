@@ -13,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
+import { useThemeMode } from "@/context/ThemeContext";
 import {
   loadCloudinarySettings,
   saveCloudinarySettings,
@@ -24,6 +25,7 @@ import { isCloudinaryConfigured } from "@/services/cloudinary";
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { themeMode, setThemeMode } = useThemeMode();
   const [settings, setSettings] = useState<CloudinarySettings>(defaultCloudinarySettings);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -78,6 +80,42 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Text style={[styles.pageTitle, { color: colors.foreground }]}>Settings</Text>
+
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIcon, { backgroundColor: colors.orange100 }]}> 
+            <Feather name="moon" size={20} color={colors.primary} />
+          </View>
+          <View>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Appearance</Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Switch between light, dark, or system mode</Text>
+          </View>
+        </View>
+
+        <View style={styles.themeRow}>
+          {(["system", "light", "dark"] as const).map((mode) => {
+            const active = themeMode === mode;
+            return (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => setThemeMode(mode)}
+                style={[
+                  styles.themeBtn,
+                  {
+                    backgroundColor: active ? colors.primary : colors.background,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.themeBtnText, { color: active ? "#fff" : colors.foreground }]}>
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.cardHeader}>
@@ -208,6 +246,16 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: "700" },
   cardSub: { fontSize: 12, marginTop: 1 },
   statusDot: { width: 10, height: 10, borderRadius: 5, marginLeft: "auto" as const },
+  themeRow: { flexDirection: "row", gap: 8 },
+  themeBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+  },
+  themeBtnText: { fontSize: 13, fontWeight: "700" },
   fieldWrap: { gap: 6 },
   fieldLabel: { fontSize: 13, fontWeight: "500" },
   input: {
